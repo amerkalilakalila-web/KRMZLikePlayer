@@ -21,16 +21,25 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
       - name: Unpack project
         run: |
           rm -rf extracted
           mkdir extracted
           unzip -q KRMZLikePlayer-v3-source.zip -d extracted
 
-          PROJECT_DIR=$(find extracted -type f -name "gradlew" -print -quit | xargs -r dirname)
+          PROJECT_DIR=$(find extracted -type f \( \
+            -name "settings.gradle" -o \
+            -name "settings.gradle.kts" \
+          \) -print -quit | xargs -r dirname)
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "Could not find Gradle project."
+            find extracted -maxdepth 6 -type f | sort
             exit 1
           fi
 
@@ -39,9 +48,8 @@ jobs:
 
       - name: Build APK
         run: |
-          chmod +x "$PROJECT_DIR/gradlew"
           cd "$PROJECT_DIR"
-          ./gradlew assembleDebug --no-daemon
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Find APK
         run: |
